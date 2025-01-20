@@ -2,7 +2,7 @@
 #define _CONFIG_H_
 
 #define RINGING_TIME        3
-#define MEDIA_SESSION_TIME  10
+#define MEDIA_SESSION_TIME  5
 
 #define CHANNEL_COUNT       1
 #define PORT_COUNT          255
