@@ -1,4 +1,4 @@
-#include "../headers/answering_machine_t.h"
+#include "../headers/answering_machine.h"
 
 int main(void)
 {

@@ -1,5 +1,5 @@
-#ifndef _ANSWERING_MACHINE_T_H_
-#define _ANSWERING_MACHINE_T_H_
+#ifndef _ANSWERING_MACHINE_H_
+#define _ANSWERING_MACHINE_H_
 
 #include <pj/types.h>
 #include <pjsip.h>
@@ -13,7 +13,7 @@
 #include <pj/hash.h>
 
 #include "util.h"
-#include "call_t.h"
+#include "call.h"
 #include "config.h"
 
 #define AF              pj_AF_INET() 
@@ -22,10 +22,10 @@
 
 #define POOL_SIZE       4000
 #define POOL_INC        4000
-#define THIS_FILE       "answering_machine_t.c"
-#define MAX_MEDIA_CNT   1            /* Media count, set to 1 for audio */
+#define THIS_FILE       "answering_machine.c"
+#define MAX_MEDIA_CNT   15            /* Media count, set to 1 for audio */
 
-#define MAX_CALLS 25
+#define MAX_CALLS 15
 
 struct answering_machine_t 
 {
@@ -37,9 +37,6 @@ struct answering_machine_t
     pj_hash_table_t      *table;
     struct call_t**       calls;
     
-    int calls_count;
-    int calls_capacity;
-
     pjmedia_transport_info g_med_tpinfo[MAX_MEDIA_CNT]; 
                                                 /* Socket info for media    */
     pjmedia_transport    *g_med_transport[MAX_MEDIA_CNT];
@@ -49,6 +46,11 @@ struct answering_machine_t
     pjsip_module mod_simpleua;
 
     pjsip_module msg_logger; 
+        
+    int calls_count;
+    int calls_capacity;
+    
+    int g_med_index; 
 };
 
 pj_status_t answering_machine_create();
@@ -101,4 +103,4 @@ static void on_media_state_timer_callback(pj_timer_heap_t *timer_heap, struct pj
 /* Callback to be called to handle incoming requests outside dialogs: */
 static pj_bool_t on_rx_request(pjsip_rx_data *rdata );
 
-#endif // !_ANSWERING_MACHINE_T_H_
+#endif // !_ANSWERING_MACHINE_H_

@@ -1,5 +1,5 @@
-#ifndef _CALL_T_H_
-#define _CALL_T_H_
+#ifndef _CALL_H_
+#define _CALL_H_
 
 #include <pj/timer.h>
 #include <pjsip.h>
@@ -30,4 +30,4 @@ pj_status_t create_call(pj_pool_t* pool, pj_str_t call_id,  struct call_t** call
 
 void free_call(struct call_t *call); 
 
-#endif // !_CALL_T_H
+#endif // !_CALL_H

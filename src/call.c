@@ -1,4 +1,4 @@
-#include "../headers/call_t.h"
+#include "../headers/call.h"
 
 pj_status_t create_call(pj_pool_t* pool, pj_str_t call_id,  struct call_t** call) {
     (*call) = (struct call_t*) pj_pool_alloc(pool, sizeof(**call)); 
@@ -15,6 +15,8 @@ pj_status_t create_call(pj_pool_t* pool, pj_str_t call_id,  struct call_t** call
     (*call)->ringing_timer = (pj_timer_entry*) pj_pool_alloc(pool, sizeof(pj_timer_entry)); 
     (*call)->media_session_timer = (pj_timer_entry*) pj_pool_alloc(pool, sizeof(pj_timer_entry)); 
     
+    
+
     /* Time values */
     (*call)->ringing_time.sec = RINGING_TIME;
     (*call)->ringing_time.msec = 0;

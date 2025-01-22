@@ -1,5 +1,4 @@
-#include "../headers/answering_machine_t.h"
-#include <pj/types.h>
+#include "../headers/answering_machine.h"
 
 struct answering_machine_t* machine;
 
@@ -33,6 +32,7 @@ pj_status_t answering_machine_create()
     machine->pool = pool;
     machine->calls_count = 0;
     machine->calls_capacity = MAX_CALLS; 
+    machine->g_med_index = 0;
 
     answering_machine_global_endpt_init();
     
@@ -266,8 +266,6 @@ pj_status_t answering_machine_media_transport_create()
                   sizeof(pjmedia_sock_info));
     }
 
-    PJ_LOG(3,(THIS_FILE, "Ready to accept incoming calls..."));
-
     return status;
 }
 
@@ -318,6 +316,7 @@ pj_status_t answering_machine_delete_call(const pj_str_t* dlg_id)
 
 void answering_machine_calls_recv() 
 {
+    PJ_LOG(3,(THIS_FILE, "Ready to accept incoming calls..."));
     while (1) {
         /*char option[10];
         
@@ -459,7 +458,7 @@ static void call_on_media_update(pjsip_inv_session *inv,
      * media socket that we created earlier.
      */
     status = pjmedia_stream_create(machine->g_med_endpt, inv->dlg->pool, &stream_info,
-                                   machine->g_med_transport[0], NULL, &call->med_stream);
+                                   machine->g_med_transport[machine->g_med_index], NULL, &call->med_stream);
     if (status != PJ_SUCCESS) {
         app_perror( THIS_FILE, "Unable to create audio stream", status);
         return;
@@ -473,7 +472,7 @@ static void call_on_media_update(pjsip_inv_session *inv,
     }
 
     /* Start the UDP media transport */
-    status = pjmedia_transport_media_start(machine->g_med_transport[0], 0, 0, 0, 0);
+    status = pjmedia_transport_media_start(machine->g_med_transport[machine->g_med_index], 0, 0, 0, 0);
     if (status != PJ_SUCCESS) {
         app_perror( THIS_FILE, "Unable to start UDP media transport", status);
         return;
@@ -512,6 +511,8 @@ static void call_on_media_update(pjsip_inv_session *inv,
             ));
         return;
     }
+    
+    machine->g_med_index++;
 
     status = pjmedia_snd_port_connect(call->snd_port, media_port);
 
@@ -713,7 +714,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
                                       180, 
                                       NULL, NULL, &tdata);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, PJ_TRUE);
-
+    
 
     /* Send the 180 response. */  
     status = pjsip_inv_send_msg(call->inv, tdata); 
@@ -721,7 +722,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
     
     pj_timer_entry_init(call->ringing_timer, 1, call, on_ringing_timer_callback);
     pj_timer_entry_init(call->media_session_timer, 1, call, on_media_state_timer_callback);
-
+   
     pjsip_endpt_schedule_timer(machine->g_endpt, call->ringing_timer, &call->ringing_time);
         
     return PJ_TRUE;
