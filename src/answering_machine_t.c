@@ -1,4 +1,5 @@
 #include "../headers/answering_machine_t.h"
+#include <pj/types.h>
 
 struct answering_machine_t* machine;
 
@@ -526,14 +527,16 @@ static void call_on_media_update(pjsip_inv_session *inv,
 static void call_on_state_changed(pjsip_inv_session *inv, 
                                   pjsip_event *e) 
 {
+    struct call_t* call;
     PJ_UNUSED_ARG(e);
 
     if (inv->state == PJSIP_INV_STATE_DISCONNECTED) 
     {
-
         PJ_LOG(3,(THIS_FILE, "Call DISCONNECTED [reason=%d (%s)]", 
                   inv->cause,
                   pjsip_get_status_text(inv->cause)->ptr));
+        answering_machine_find_call(&inv->dlg->call_id->id, &call);
+        free_call(call); 
     } 
     else 
     {
@@ -600,9 +603,8 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
     pjsip_tx_data *tdata;
     unsigned options = 0;
     pj_status_t status;
-    pjsip_inv_session *inv;         /* Current invite session.  */
-    struct call_t* call;
     pj_pool_t* call_pool;
+    struct call_t* call;
 
     /* 
      * Respond (statelessly) any non-INVITE requests with 500 
@@ -659,15 +661,17 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
                                       NULL, NULL);
         return PJ_TRUE;
     }
-    
-    call_pool = pj_pool_create(&cp.factory, "call_pool", POOL_SIZE, POOL_INC, NULL);
+    call_pool = pjsip_endpt_create_pool(machine->g_endpt, "call_pool", 1000, 1000); 
 
-    status = create_call_from_dlg(call_pool, dlg->call_id->id, &call);
+    status = create_call(dlg->pool, dlg->call_id->id, &call);
     if (status != PJ_SUCCESS) {
         app_perror(THIS_FILE, "Error in call creation", status);
     }
 
-    answering_machine_add_call(call);
+    status = answering_machine_add_call(call);
+    if (status != PJ_SUCCESS) {
+        app_perror(THIS_FILE, "Error in adding call to array", status);
+    }
 
     /* 
      * Get media capability from media endpoint: 

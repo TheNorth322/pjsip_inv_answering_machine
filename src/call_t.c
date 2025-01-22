@@ -1,9 +1,8 @@
 #include "../headers/call_t.h"
 
-pj_status_t create_call_from_dlg(pj_pool_t* pool, pj_str_t call_id,  struct call_t** call) {
-    (*call) = (struct call_t*) malloc(sizeof(*call)); 
+pj_status_t create_call(pj_pool_t* pool, pj_str_t call_id,  struct call_t** call) {
+    (*call) = (struct call_t*) pj_pool_alloc(pool, sizeof(**call)); 
     if (!call) {
-        /* TODO: Change code */
         return -1; 
     }
     
@@ -13,8 +12,8 @@ pj_status_t create_call_from_dlg(pj_pool_t* pool, pj_str_t call_id,  struct call
     (*call)->med_stream = NULL;
 
     /* Timers */
-    (*call)->ringing_timer = (pj_timer_entry*) malloc(sizeof(pj_timer_entry)); 
-    (*call)->media_session_timer = (pj_timer_entry*) malloc(sizeof(pj_timer_entry)); 
+    (*call)->ringing_timer = (pj_timer_entry*) pj_pool_alloc(pool, sizeof(pj_timer_entry)); 
+    (*call)->media_session_timer = (pj_timer_entry*) pj_pool_alloc(pool, sizeof(pj_timer_entry)); 
     
     /* Time values */
     (*call)->ringing_time.sec = RINGING_TIME;
