@@ -12,6 +12,8 @@
 #include <pjsip_ua.h>
 #include <stdio.h>
 
+#include "util.h"
+
 struct media_socket_t
 {
     pjmedia_transport_info med_tpinfo;

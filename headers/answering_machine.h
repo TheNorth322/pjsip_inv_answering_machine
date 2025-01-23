@@ -28,7 +28,7 @@
 #define POOL_SIZE 4000
 #define POOL_INC 4000
 #define THIS_FILE "answering_machine.c"
-#define MAX_MEDIA_CNT 29 /* Media count, set to 1 for audio */
+#define MAX_MEDIA_CNT 29
 
 #define MAX_CALLS 35
 

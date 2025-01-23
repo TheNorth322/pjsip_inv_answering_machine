@@ -16,4 +16,5 @@ AllowShortBlocksOnASingleLine: false
 AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortLambdasOnASingleLine: false
 BreakBeforeBinaryOperators: NonAssignment
+AlignAfterOpenBracket: AlwaysBreak
 SpacesBeforeTrailingComments: 2

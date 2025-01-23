@@ -5,13 +5,16 @@ pj_status_t create_call(pj_pool_t *pool, pj_str_t call_id, struct call_t **call)
     (*call) = (struct call_t *)pj_pool_alloc(pool, sizeof(**call));
     if (!call)
     {
-        return -1;
+        return FAILURE;
     }
 
     (*call)->pool = pool;
     (*call)->call_id = call_id;
     (*call)->snd_port = NULL;
     (*call)->med_stream = NULL;
+
+    (*call)->player_port = -1;
+    (*call)->conf_port = -1;
 
     /* Timers */
     (*call)->ringing_timer = (pj_timer_entry *)pj_pool_alloc(pool, sizeof(pj_timer_entry));
@@ -29,11 +32,16 @@ pj_status_t create_call(pj_pool_t *pool, pj_str_t call_id, struct call_t **call)
 
 void free_call(struct call_t *call)
 {
-    call->socket->occupied = PJ_FALSE;
+    if (call->socket)
+    {
+        call->socket->occupied = PJ_FALSE;
+    }
 
     if (call->snd_port)
+    {
         pjmedia_snd_port_destroy(call->snd_port);
-    
+    }
+
     /*if (call->med_stream)
         pjmedia_stream_destroy(call->med_stream);*/
 }

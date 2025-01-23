@@ -19,10 +19,10 @@
 
 #define CHANNEL_COUNT 1
 
-pj_status_t get_longtone_signal(pj_pool_t *pool, pjmedia_port **port);
+pj_status_t signals_longtone_get(pj_pool_t *pool, pjmedia_port **port);
 
-pj_status_t get_wav_signal(pj_pool_t *pool, pjmedia_port **port);
+pj_status_t signals_wav_get(pj_pool_t *pool, pjmedia_port **port);
 
-pj_status_t get_rbt_signal(pj_pool_t *pool, pjmedia_port **port);
+pj_status_t signals_rbt_get(pj_pool_t *pool, pjmedia_port **port);
 
 #endif  // !_SIGNALS_H_

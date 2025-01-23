@@ -10,7 +10,7 @@ pj_status_t media_socket_create(pj_pool_t *pool,
      
     (*socket) = (struct media_socket_t*) pj_pool_alloc(pool, sizeof(**socket)); 
     if (!socket) {
-        return -1; 
+        return FAILURE; 
     }   
     
     (*socket)->occupied = PJ_FALSE;

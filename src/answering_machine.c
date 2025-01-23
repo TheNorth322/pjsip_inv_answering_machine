@@ -1,29 +1,27 @@
 #include "../headers/answering_machine.h"
-#include <pj/timer.h>
-#include <pjmedia/transport.h>
 
 /* Definitions */
-static pj_status_t answering_machine_ua_module_init(pjsip_module *module);
+static pj_status_t ua_module_init(pjsip_module *module);
 
-static pj_status_t answering_machine_logger_module_init(pjsip_module *module);
+static pj_status_t logger_module_init(pjsip_module *module);
 
-static pj_status_t answering_machine_global_endpt_init(void);
+static pj_status_t global_endpt_init(void);
 
-static pj_status_t answering_machine_transport_init(void);
+static pj_status_t transport_init(void);
 
-static pj_status_t answering_machine_invite_module_init(void);
+static pj_status_t invite_module_init(void);
 
-static pj_status_t answering_machine_media_endpt_init(void);
+static pj_status_t media_endpt_init(void);
 
-static pj_status_t answering_machine_media_transport_create(void);
+static pj_status_t media_transport_create(void);
 
-static pj_status_t answering_machine_add_call(struct call_t *call);
+static pj_status_t call_add(struct call_t *call);
 
-static pj_status_t answering_machine_find_socket(struct media_socket_t **socket);
+static pj_status_t socket_find(struct media_socket_t **socket);
 
-static pj_status_t answering_machine_find_call(const pj_str_t *dlg_id, struct call_t **call);
+static pj_status_t call_find(const pj_str_t *dlg_id, struct call_t **call);
 
-static pj_status_t answering_machine_delete_call(const pj_str_t *dlg_id);
+static pj_status_t call_delete(const pj_str_t *dlg_id);
 
 static void answering_machine_free(struct answering_machine_t *machine_ptr);
 
@@ -81,9 +79,9 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
     machine->calls_count = 0;
     machine->calls_capacity = MAX_CALLS;
 
-    answering_machine_global_endpt_init();
+    global_endpt_init();
 
-    answering_machine_transport_init();
+    transport_init();
 
     /* Init modules */
     status = pjsip_tsx_layer_init_module(machine->g_endpt);
@@ -92,10 +90,10 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
     status = pjsip_ua_init_module(machine->g_endpt, NULL);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
 
-    answering_machine_invite_module_init();
+    invite_module_init();
 
-    answering_machine_ua_module_init(&machine->mod_simpleua);
-    answering_machine_logger_module_init(&machine->msg_logger);
+    ua_module_init(&machine->mod_simpleua);
+    logger_module_init(&machine->msg_logger);
 
     status = pjsip_100rel_init_module(machine->g_endpt);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, status);
@@ -107,13 +105,13 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
     status = pjsip_endpt_register_module(machine->g_endpt, &machine->msg_logger);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
 
-    answering_machine_media_endpt_init();
+    media_endpt_init();
 
     /* Create event manager */
     status = pjmedia_event_mgr_create(*pool, 0, NULL);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
 
-    answering_machine_media_transport_create();
+    media_transport_create();
 
     status =
         pjmedia_conf_create(machine->pool, MAX_CALLS, CLOCK_RATE, NCHANNELS, NSAMPLES, NBITS, 0, &machine->conf);
@@ -153,7 +151,7 @@ void answering_machine_signal_add(pjmedia_port *signal, char *username)
     pj_hash_set(machine->pool, machine->table, username, PJ_HASH_KEY_STRING, 0, p_slot);
 }
 
-static pj_status_t answering_machine_ua_module_init(pjsip_module *module)
+static pj_status_t ua_module_init(pjsip_module *module)
 {
     if (module == NULL)
     {
@@ -180,7 +178,7 @@ static pj_status_t answering_machine_ua_module_init(pjsip_module *module)
     return PJ_SUCCESS;
 }
 
-static pj_status_t answering_machine_logger_module_init(pjsip_module *module)
+static pj_status_t logger_module_init(pjsip_module *module)
 {
     if (module == NULL)
     {
@@ -207,7 +205,7 @@ static pj_status_t answering_machine_logger_module_init(pjsip_module *module)
     return PJ_SUCCESS;
 }
 
-static pj_status_t answering_machine_global_endpt_init(void)
+static pj_status_t global_endpt_init(void)
 {
     pj_status_t status;
     const pj_str_t *hostname;
@@ -225,7 +223,7 @@ static pj_status_t answering_machine_global_endpt_init(void)
     return status;
 }
 
-static pj_status_t answering_machine_transport_init(void)
+static pj_status_t transport_init(void)
 {
     pj_status_t status;
     pj_sockaddr addr;
@@ -255,7 +253,7 @@ static pj_status_t answering_machine_transport_init(void)
     return status;
 }
 
-static pj_status_t answering_machine_invite_module_init(void)
+static pj_status_t invite_module_init(void)
 {
     pjsip_inv_callback inv_cb;
     pj_status_t status;
@@ -272,7 +270,7 @@ static pj_status_t answering_machine_invite_module_init(void)
     return status;
 }
 
-static pj_status_t answering_machine_media_endpt_init(void)
+static pj_status_t media_endpt_init(void)
 {
     pj_status_t status;
 
@@ -299,7 +297,7 @@ static pj_status_t answering_machine_media_endpt_init(void)
     return status;
 }
 
-static pj_status_t answering_machine_media_transport_create(void)
+static pj_status_t media_transport_create(void)
 {
     int i;
     pj_status_t status;
@@ -314,13 +312,13 @@ static pj_status_t answering_machine_media_transport_create(void)
     return status;
 }
 
-static pj_status_t answering_machine_add_call(struct call_t *call)
+static pj_status_t call_add(struct call_t *call)
 {
     int i = machine->calls_count;
 
     if (machine->calls_count == machine->calls_capacity)
     {
-        return -1;
+        return FAILURE;
     }
 
     machine->calls[i] = call;
@@ -329,7 +327,7 @@ static pj_status_t answering_machine_add_call(struct call_t *call)
     return PJ_SUCCESS;
 }
 
-static pj_status_t answering_machine_find_call(const pj_str_t *dlg_id, struct call_t **call)
+static pj_status_t call_find(const pj_str_t *dlg_id, struct call_t **call)
 {
     for (int i = 0; i < machine->calls_count; i++)
     {
@@ -340,10 +338,10 @@ static pj_status_t answering_machine_find_call(const pj_str_t *dlg_id, struct ca
         }
     }
 
-    return -1;
+    return FAILURE;
 }
 
-static pj_status_t answering_machine_delete_call(const pj_str_t *dlg_id)
+static pj_status_t call_delete(const pj_str_t *dlg_id)
 {
     int i;
 
@@ -367,7 +365,7 @@ static pj_status_t answering_machine_delete_call(const pj_str_t *dlg_id)
     return PJ_SUCCESS;
 }
 
-static pj_status_t answering_machine_find_socket(struct media_socket_t **socket)
+static pj_status_t socket_find(struct media_socket_t **socket)
 {
     for (int i = 0; i < MAX_MEDIA_CNT; i++)
     {
@@ -378,7 +376,7 @@ static pj_status_t answering_machine_find_socket(struct media_socket_t **socket)
         }
     }
 
-    return -1;
+    return FAILURE;
 }
 
 static void answering_machine_free(struct answering_machine_t *machine)
@@ -492,14 +490,14 @@ static void call_on_media_update(pjsip_inv_session *inv, pj_status_t status)
         return;
     }
 
-    status = answering_machine_find_call(&inv->dlg->call_id->id, &call);
+    status = call_find(&inv->dlg->call_id->id, &call);
     if (status != PJ_SUCCESS)
     {
         app_perror(THIS_FILE, "Unable to find call", status);
         return;
     }
 
-    status = answering_machine_find_socket(&call->socket);
+    status = socket_find(&call->socket);
     if (status != PJ_SUCCESS)
     {
         app_perror(THIS_FILE, "Unable to find unoccupied socket", status);
@@ -568,7 +566,7 @@ static void call_on_state_changed(pjsip_inv_session *inv, pjsip_event *e)
     {
         PJ_LOG(3,
                (THIS_FILE, "Call DISCONNECTED [reason=%d (%s)]", inv->cause, pjsip_get_status_text(inv->cause)->ptr));
-        answering_machine_find_call(&inv->dlg->call_id->id, &call);
+        call_find(&inv->dlg->call_id->id, &call);
     
         if (pj_timer_entry_running(call->ringing_timer) == PJ_TRUE)
         {
@@ -579,11 +577,12 @@ static void call_on_state_changed(pjsip_inv_session *inv, pjsip_event *e)
             pjsip_endpt_cancel_timer(machine->g_endpt, call->media_session_timer);
         }
 
-        //pjmedia_transport_media_stop(call->socket->med_transport);
-        pjmedia_conf_disconnect_port(machine->conf, call->player_port, call->conf_port);
-        pjmedia_conf_remove_port(machine->conf, call->conf_port);
+        if (call->player_port != -1 && call->conf_port != -1) {  
+            pjmedia_conf_disconnect_port(machine->conf, call->player_port, call->conf_port);
+            pjmedia_conf_remove_port(machine->conf, call->conf_port);
+        }
         
-        answering_machine_delete_call(&inv->dlg->call_id->id);
+        call_delete(&inv->dlg->call_id->id);
     }
     else
     {
@@ -713,7 +712,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
 
     call->player_port = *player_port;
 
-    status = answering_machine_add_call(call);
+    status = call_add(call);
     if (status != PJ_SUCCESS)
     {
         app_perror(THIS_FILE, "Error in adding call to array", status);

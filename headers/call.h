@@ -12,6 +12,7 @@
 
 #include "config.h"
 #include "media_socket.h"
+#include "util.h"
 
 struct call_t
 {

@@ -1,6 +1,6 @@
 #include "../headers/signals.h"
 
-pj_status_t get_longtone_signal(pj_pool_t *pool, pjmedia_port **port)
+pj_status_t signals_longtone_get(pj_pool_t *pool, pjmedia_port **port)
 {
     pj_status_t status;
 
@@ -27,7 +27,7 @@ pj_status_t get_longtone_signal(pj_pool_t *pool, pjmedia_port **port)
     return status;
 }
 
-pj_status_t get_wav_signal(pj_pool_t *pool, pjmedia_port **port)
+pj_status_t signals_wav_get(pj_pool_t *pool, pjmedia_port **port)
 {
     pj_status_t status;
 
@@ -37,7 +37,7 @@ pj_status_t get_wav_signal(pj_pool_t *pool, pjmedia_port **port)
     return status;
 }
 
-pj_status_t get_rbt_signal(pj_pool_t *pool, pjmedia_port **port)
+pj_status_t signals_rbt_get(pj_pool_t *pool, pjmedia_port **port)
 {
     pj_status_t status;
 
