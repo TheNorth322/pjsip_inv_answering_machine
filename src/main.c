@@ -7,13 +7,15 @@ int main(void)
     pjmedia_port *wav;
     pjmedia_port *rbt;
     pj_pool_t *pool;
-
+    
     answering_machine_create(&pool);
-
+    
+    /* Create signals */
     get_longtone_signal(pool, &longtone);
     get_wav_signal(pool, &wav);
     get_rbt_signal(pool, &rbt);
-
+    
+    /* Add signals to answering machine */
     answering_machine_signal_add(longtone, "longtone");
     answering_machine_signal_add(wav, "wav");
     answering_machine_signal_add(rbt, "rbt");

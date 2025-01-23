@@ -33,7 +33,7 @@ void free_call(struct call_t *call)
 
     if (call->snd_port)
         pjmedia_snd_port_destroy(call->snd_port);
-
-    // if (call->med_stream)
-    // pjmedia_stream_destroy(call->med_stream);
+    
+    /*if (call->med_stream)
+        pjmedia_stream_destroy(call->med_stream);*/
 }

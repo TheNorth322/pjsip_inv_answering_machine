@@ -25,7 +25,8 @@ struct call_t
     pj_timer_entry *ringing_timer;
     pj_timer_entry *media_session_timer;
 
-    unsigned int *player_port;
+    unsigned int player_port;
+    unsigned int conf_port;
 
     pj_time_val ringing_time;
     pj_time_val media_session_time;

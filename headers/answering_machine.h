@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <pjmedia/conference.h>
 #include <pjmedia/frame.h>
+#include <pjmedia/port.h>
 
 #include "call.h"
 #include "config.h"
@@ -27,9 +28,9 @@
 #define POOL_SIZE 4000
 #define POOL_INC 4000
 #define THIS_FILE "answering_machine.c"
-#define MAX_MEDIA_CNT 15 /* Media count, set to 1 for audio */
+#define MAX_MEDIA_CNT 29 /* Media count, set to 1 for audio */
 
-#define MAX_CALLS 15
+#define MAX_CALLS 35
 
 struct answering_machine_t
 {
