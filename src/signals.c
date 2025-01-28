@@ -5,7 +5,13 @@ pj_status_t signals_longtone_get(pj_pool_t *pool, pjmedia_port **port)
     pj_status_t status;
 
     /* Create long tonegen */
-    status = pjmedia_tonegen_create(pool, 8000, 1, 160, 16, PJMEDIA_TONEGEN_LOOP, port);
+    status = pjmedia_tonegen_create(pool, 
+                                    CLOCK_RATE, 
+                                    CHANNEL_COUNT, 
+                                    SAMPLES_PER_FRAME, 
+                                    BITS_PER_SAMPLE, 
+                                    PJMEDIA_TONEGEN_LOOP, 
+                                    port);
     if (status != PJ_SUCCESS)
     {
         return status;
@@ -42,7 +48,13 @@ pj_status_t signals_rbt_get(pj_pool_t *pool, pjmedia_port **port)
     pj_status_t status;
 
     /* Create rbt tonegen */
-    status = pjmedia_tonegen_create(pool, 8000, CHANNEL_COUNT, 64, 16, PJMEDIA_TONEGEN_LOOP, port);
+    status = pjmedia_tonegen_create(pool, 
+                                    CLOCK_RATE, 
+                                    CHANNEL_COUNT, 
+                                    SAMPLES_PER_FRAME, 
+                                    BITS_PER_SAMPLE, 
+                                    PJMEDIA_TONEGEN_LOOP, 
+                                    port);
     if (status != PJ_SUCCESS)
     {
         return status;

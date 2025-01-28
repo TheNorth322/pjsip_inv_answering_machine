@@ -57,7 +57,7 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
     status = pj_init();
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
 
-    pj_log_set_level(5);
+    pj_log_set_level(LOGGING_LEVEL);
 
     /* Init PJLIB-UTIL */
     status = pjlib_util_init();
@@ -66,7 +66,11 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
     /* Create pool factory and machine pool */
     pj_caching_pool_init(&cp, &pj_pool_factory_default_policy, 0);
 
-    *pool = pj_pool_create(&cp.factory, "answering_machine_pool", POOL_SIZE, POOL_INC, NULL);
+    *pool = pj_pool_create(&cp.factory, 
+                           "answering_machine_pool", 
+                           MACHINE_POOL_SIZE, 
+                           MACHINE_POOL_INC, 
+                           NULL);
 
     /* Init machine */
     machine = (struct answering_machine_t *)pj_pool_alloc(*pool, sizeof(*machine));
@@ -127,17 +131,18 @@ void answering_machine_calls_recv(void)
     PJ_LOG(3, (THIS_FILE, "Ready to accept incoming calls..."));
     while (1)
     {
-        /*char option[10];
-
-        puts("Press 'q' to quit");
-        if (fgets(option, sizeof(option), stdin) == NULL) {
-            puts("EOF while reading stdin, will quit now...");
-        }
-
-        if (option[0] == 'q') {
-            break;
-        }*/
-        pj_time_val timeout = {0, 10};
+        //char option[10];
+        //
+        //puts("Press 'q' to quit");
+        //if (fgets(option, sizeof(option), stdin) == NULL) {
+        //    puts("EOF while reading stdin, will quit now...");
+        //}
+        //
+        //if (option[0] == 'q') {
+        //    break;
+        //}
+        
+        pj_time_val timeout = {ENDPT_TIMEOUT_SEC, ENDPT_TIMEOUT_MSEC};
         pjsip_endpt_handle_events(machine->g_endpt, &timeout);
     }
 
@@ -146,7 +151,8 @@ void answering_machine_calls_recv(void)
 
 void answering_machine_signal_add(pjmedia_port *signal, char *username)
 {
-    unsigned int *p_slot = (unsigned int *)pj_pool_alloc(machine->pool, sizeof(*p_slot));
+    unsigned int *p_slot = (unsigned int *) pj_pool_alloc(machine->pool, sizeof(*p_slot));
+
     pjmedia_conf_add_port(machine->conf, machine->pool, signal, NULL, p_slot);
     pj_hash_set(machine->pool, machine->table, username, PJ_HASH_KEY_STRING, 0, p_slot);
 }
@@ -155,7 +161,7 @@ static pj_status_t ua_module_init(pjsip_module *module)
 {
     if (module == NULL)
     {
-        app_perror(THIS_FILE, "Logger module is NULL", 1);
+        app_perror(THIS_FILE, "Module is NULL", 1);
     }
 
     module->prev = NULL;
@@ -247,7 +253,7 @@ static pj_status_t transport_init(void)
     if (status != PJ_SUCCESS)
     {
         app_perror(THIS_FILE, "Unable to start UDP transport", status);
-        return 1;
+        return FAILURE;
     }
 
     return status;
@@ -276,19 +282,20 @@ static pj_status_t media_endpt_init(void)
 
 #if PJ_HAS_THREADS
     status = pjmedia_endpt_create(&machine->cp->factory, NULL, 1, &machine->g_med_endpt);
-#else
+#else /* PJ_HAS_THREADS */
     status = pjmedia_endpt_create(
         &machine->cp->factory, pjsip_endpt_get_ioqueue(machine->g_endpt), 0, &machine->g_med_endpt);
-#endif
+#endif /* PJ_HAS_THREADS */
 
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
 
-    /* Create pool. */
-    machine->media_pool = pjmedia_endpt_create_pool(machine->g_med_endpt, "Media pool", 512, 512);
+    /* Create pool */
+    machine->media_pool = pjmedia_endpt_create_pool(machine->g_med_endpt, 
+                                                    "Media pool", 
+                                                    MEDIA_POOL_SIZE, 
+                                                    MEDIA_POOL_INC);
 
-    /*
-     * Add PCMA/PCMU codec to the media endpoint.
-     */
+    /* Add PCMA/PCMU codec to the media endpoint */
 #if defined(PJMEDIA_HAS_G711_CODEC) && PJMEDIA_HAS_G711_CODEC != 0
     status = pjmedia_codec_g711_init(machine->g_med_endpt);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
@@ -304,8 +311,11 @@ static pj_status_t media_transport_create(void)
 
     for (i = 0; i < MAX_MEDIA_CNT; ++i)
     {
-        status =
-            media_socket_create(machine->pool, machine->g_med_endpt, AF, RTP_PORT + i * 2, &machine->med_sockets[i]);
+        status = media_socket_create(machine->pool, 
+                                     machine->g_med_endpt, 
+                                     AF, 
+                                     RTP_PORT + i * 2, 
+                                     &machine->med_sockets[i]);
         machine->g_sock_info[i] = machine->med_sockets[i]->sock_info;
     }
 
@@ -432,13 +442,6 @@ static pj_bool_t logging_on_rx_msg(pjsip_rx_data *rdata)
 /* Notification on outgoing messages */
 static pj_status_t logging_on_tx_msg(pjsip_tx_data *tdata)
 {
-
-    /* Important note:
-     *  tp_info field is only valid after outgoing messages has passed
-     *  transport layer. So don't try to access tp_info when the module
-     *  has lower priority than transport layer.
-     */
-
     PJ_LOG(4,
            (THIS_FILE,
             "TX %ld bytes %s to %s %s:%d:\n"
@@ -452,7 +455,7 @@ static pj_status_t logging_on_tx_msg(pjsip_tx_data *tdata)
             (int)(tdata->buf.cur - tdata->buf.start),
             tdata->buf.start));
 
-    /* Always return success, otherwise message will not get sent! */
+    /* Return success, otherwise message will not get sent */
     return PJ_SUCCESS;
 }
 
@@ -475,15 +478,18 @@ static void call_on_media_update(pjsip_inv_session *inv, pj_status_t status)
         return;
     }
 
-    /* Get local and remote SDP.
-     * We need both SDPs to create a media session.
-     */
+    /* Get local and remote SDP */
     status = pjmedia_sdp_neg_get_active_local(inv->neg, &local_sdp);
 
     status = pjmedia_sdp_neg_get_active_remote(inv->neg, &remote_sdp);
 
-    /* Create stream info based on the media audio SDP. */
-    status = pjmedia_stream_info_from_sdp(&stream_info, inv->dlg->pool, machine->g_med_endpt, local_sdp, remote_sdp, 0);
+    /* Create stream info based on the media audio SDP */
+    status = pjmedia_stream_info_from_sdp(&stream_info, 
+                                          inv->dlg->pool, 
+                                          machine->g_med_endpt, 
+                                          local_sdp, 
+                                          remote_sdp, 
+                                          0);
     if (status != PJ_SUCCESS)
     {
         app_perror(THIS_FILE, "Unable to create audio stream info", status);
@@ -505,11 +511,13 @@ static void call_on_media_update(pjsip_inv_session *inv, pj_status_t status)
     }
     call->socket->occupied = PJ_TRUE;
 
-    /* Create new audio media stream, passing the stream info, and also the
-     * media socket that we created earlier.
-     */
-    status = pjmedia_stream_create(
-        machine->g_med_endpt, inv->dlg->pool, &stream_info, call->socket->med_transport, NULL, &call->med_stream);
+    /* Create new audio media stream */
+    status = pjmedia_stream_create(machine->g_med_endpt, 
+                                   inv->dlg->pool, 
+                                   &stream_info, 
+                                   call->socket->med_transport, 
+                                   NULL, 
+                                   &call->med_stream);
     if (status != PJ_SUCCESS)
     {
         app_perror(THIS_FILE, "Unable to create audio stream", status);
@@ -527,9 +535,7 @@ static void call_on_media_update(pjsip_inv_session *inv, pj_status_t status)
     /* Add media port to conf bridge */
     pjmedia_conf_add_port(machine->conf, machine->pool, media_port, NULL, &call->conf_port);
 
-    /* TODO: Find conf bridge slot for username */
-
-    /* TODO: Link call port to player port in conf bridge */
+    /* Link call port to player port in conf bridge */
     pjmedia_conf_connect_port(machine->conf, call->player_port, call->conf_port, 0);
 
     /* Start the audio stream */
@@ -564,7 +570,7 @@ static void call_on_state_changed(pjsip_inv_session *inv, pjsip_event *e)
 
     if (inv->state == PJSIP_INV_STATE_DISCONNECTED)
     {
-        PJ_LOG(3,
+        PJ_LOG(3, 
                (THIS_FILE, "Call DISCONNECTED [reason=%d (%s)]", inv->cause, pjsip_get_status_text(inv->cause)->ptr));
         call_find(&inv->dlg->call_id->id, &call);
     
@@ -601,8 +607,8 @@ static void on_ringing_timer_callback(pj_timer_heap_t *timer_heap, struct pj_tim
     /* Create 200 response */
     status = pjsip_inv_answer(call->inv,
                               200,
-                              NULL, /* st_code and st_text */
-                              NULL, /* SDP already specified */
+                              NULL, 
+                              NULL, 
                               &tdata);
 
     /* Send the 200 response */
@@ -618,8 +624,8 @@ static void on_media_state_timer_callback(pj_timer_heap_t *timer_heap, struct pj
     PJ_UNUSED_ARG(timer_heap);
 
     status = pjsip_inv_end_session(call->inv,
-                                   403,  /* st_code and st_text */
-                                   NULL, /* SDP already specified */
+                                   403, 
+                                   NULL, 
                                    &tdata);
 
     status = pjsip_inv_send_msg(call->inv, tdata);
@@ -633,8 +639,8 @@ static void on_media_state_timer_callback(pj_timer_heap_t *timer_heap, struct pj
 static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
 {
     pj_sockaddr hostaddr;
-    char temp[80], hostip[PJ_INET6_ADDRSTRLEN];
     pj_str_t local_uri;
+    pj_str_t reason;
     pjsip_dialog *dlg;
     pjmedia_sdp_session *local_sdp;
     pjsip_user_agent *ua;
@@ -643,6 +649,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
     unsigned options = 0;
     unsigned int *player_port;
     pj_status_t status;
+    char temp[80], hostip[PJ_INET6_ADDRSTRLEN];
     struct call_t *call;
 
     /* Respond (statelessly) any non-INVITE requests with 500 */
@@ -651,7 +658,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
 
         if (rdata->msg_info.msg->line.req.method.id != PJSIP_ACK_METHOD)
         {
-            pj_str_t reason = pj_str("Simple UA unable to handle "
+            reason = pj_str("Simple UA unable to handle "
                                      "this request");
 
             pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 500, &reason, NULL, NULL);
@@ -664,18 +671,18 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
     if (status != PJ_SUCCESS)
     {
 
-        pj_str_t reason = pj_str("Sorry Simple UA can not handle this INVITE");
+        reason = pj_str("Sorry Simple UA can not handle this INVITE");
 
         pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 500, &reason, NULL, NULL);
         return PJ_TRUE;
     }
 
     /* Verify username */
-    uri = (pjsip_sip_uri *)pjsip_uri_get_uri(rdata->msg_info.to->uri);
+    uri = (pjsip_sip_uri *) pjsip_uri_get_uri(rdata->msg_info.to->uri);
     player_port = pj_hash_get(machine->table, uri->user.ptr, uri->user.slen, 0);
     if (player_port == NULL)
     {
-        pj_str_t reason = pj_str("Can't find username");
+        reason = pj_str("Can't find username");
 
         pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 403, &reason, NULL, NULL);
         return PJ_TRUE;
@@ -696,7 +703,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
     ua = pjsip_ua_instance();
     status = pjsip_dlg_create_uas_and_inc_lock(ua,
                                                rdata,
-                                               &local_uri, /* contact */
+                                               &local_uri,
                                                &dlg);
     if (status != PJ_SUCCESS)
     {

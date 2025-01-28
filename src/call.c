@@ -17,8 +17,8 @@ pj_status_t create_call(pj_pool_t *pool, pj_str_t call_id, struct call_t **call)
     (*call)->conf_port = -1;
 
     /* Timers */
-    (*call)->ringing_timer = (pj_timer_entry *)pj_pool_alloc(pool, sizeof(pj_timer_entry));
-    (*call)->media_session_timer = (pj_timer_entry *)pj_pool_alloc(pool, sizeof(pj_timer_entry));
+    (*call)->ringing_timer = (pj_timer_entry *) pj_pool_alloc(pool, sizeof(pj_timer_entry));
+    (*call)->media_session_timer = (pj_timer_entry *) pj_pool_alloc(pool, sizeof(pj_timer_entry));
 
     /* Time values */
     (*call)->ringing_time.sec = RINGING_TIME;
@@ -42,6 +42,6 @@ void free_call(struct call_t *call)
         pjmedia_snd_port_destroy(call->snd_port);
     }
 
-    /*if (call->med_stream)
-        pjmedia_stream_destroy(call->med_stream);*/
+    //if (call->med_stream)
+    //    pjmedia_stream_destroy(call->med_stream);
 }

@@ -25,22 +25,30 @@
 #define SIP_PORT 6222 /* Listening SIP port              */
 #define RTP_PORT 4000 /* RTP port                        */
 
-#define POOL_SIZE 4000
-#define POOL_INC 4000
+#define MACHINE_POOL_SIZE 4000
+#define MACHINE_POOL_INC 4000
+
+#define MEDIA_POOL_SIZE 512
+#define MEDIA_POOL_INC 512
+
 #define THIS_FILE "answering_machine.c"
 #define MAX_MEDIA_CNT 29
 
 #define MAX_CALLS 35
 
+#define LOGGING_LEVEL 5
+#define ENDPT_TIMEOUT_SEC 0
+#define ENDPT_TIMEOUT_MSEC 10 
+
 struct answering_machine_t
 {
-    pjsip_endpoint *g_endpt; /* SIP endpoint.            */
+    pjsip_endpoint *g_endpt; /* SIP endpoint */
 
-    pj_caching_pool *cp; /* Global pool factory.     */
+    pj_caching_pool *cp; /* Global pool factory */
     pj_pool_t *pool;
     pj_pool_t *media_pool;
 
-    pjmedia_endpt *g_med_endpt; /* Media endpoint.          */
+    pjmedia_endpt *g_med_endpt; /* Media endpoint */
 
     struct call_t **calls;
     struct media_socket_t **med_sockets;

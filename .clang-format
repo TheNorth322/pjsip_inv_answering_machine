@@ -1,8 +1,13 @@
 BasedOnStyle: LLVM
+# Max length of line is 120
 ColumnLimit: 120
+# Use spaces instead of TABs
 UseTab: Never
+# TAB width
 IndentWidth: 4
 BreakBeforeBraces: Allman
+
+# ETC
 SpaceAroundPointerQualifiers: Both
 SpaceBeforeParens: ControlStatements
 PointerAlignment: Right

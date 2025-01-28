@@ -23,8 +23,11 @@ struct media_socket_t
     pj_bool_t occupied;
 };
 
-pj_status_t media_socket_create(
-    pj_pool_t *pool, pjmedia_endpt *endpt, const pj_uint16_t af, const int rtp_port, struct media_socket_t **socket);
+pj_status_t media_socket_create(pj_pool_t *pool, 
+                                pjmedia_endpt *endpt, 
+                                const pj_uint16_t af, 
+                                const int rtp_port, 
+                                struct media_socket_t **socket);
 
 void media_socket_free(struct media_socket_t *socket);
 
