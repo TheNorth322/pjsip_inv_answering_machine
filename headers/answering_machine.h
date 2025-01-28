@@ -22,8 +22,8 @@
 #include "util.h"
 
 #define AF pj_AF_INET()
-#define SIP_PORT 6222 /* Listening SIP port              */
-#define RTP_PORT 4000 /* RTP port                        */
+#define SIP_PORT 6222 
+#define RTP_PORT 4000 
 
 #define MACHINE_POOL_SIZE 4000
 #define MACHINE_POOL_INC 4000
@@ -68,7 +68,7 @@ struct answering_machine_t
 
 pj_status_t answering_machine_create(pj_pool_t **pool);
 
-void answering_machine_signal_add(pjmedia_port *signal, char *username);
+void answering_machine_signal_add(pjmedia_port *signal, const char *username);
 
 void answering_machine_calls_recv();
 

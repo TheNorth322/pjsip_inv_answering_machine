@@ -25,23 +25,18 @@ static pj_status_t call_delete(const pj_str_t *dlg_id);
 
 static void answering_machine_free(struct answering_machine_t *machine_ptr);
 
-/* Notification on incoming messages */
 static pj_bool_t logging_on_rx_msg(pjsip_rx_data *rdata);
 
-/* Notification on outgoing messages */
 static pj_status_t logging_on_tx_msg(pjsip_tx_data *tdata);
 
-/* Callback to be called when SDP negotiation is done in the call: */
 static void call_on_media_update(pjsip_inv_session *inv, pj_status_t status);
 
-/* Callback to be called when invite session's state has changed: */
 static void call_on_state_changed(pjsip_inv_session *inv, pjsip_event *e);
 
 static void on_ringing_timer_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
 
 static void on_media_state_timer_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
 
-/* Callback to be called to handle incoming requests outside dialogs: */
 static pj_bool_t on_rx_request(pjsip_rx_data *rdata);
 
 /* Global variables */
@@ -149,7 +144,7 @@ void answering_machine_calls_recv(void)
     answering_machine_free(machine);
 }
 
-void answering_machine_signal_add(pjmedia_port *signal, char *username)
+void answering_machine_signal_add(pjmedia_port *signal, const char *username)
 {
     unsigned int *p_slot = (unsigned int *) pj_pool_alloc(machine->pool, sizeof(*p_slot));
 
