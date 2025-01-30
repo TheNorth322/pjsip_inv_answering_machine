@@ -33,8 +33,8 @@ struct call_t
     pj_time_val media_session_time;
 };
 
-pj_status_t create_call(pj_pool_t *pool, pj_str_t call_id, struct call_t **call);
+pj_status_t call_create(pj_pool_t *pool, pj_str_t call_id, struct call_t **call);
 
-void free_call(struct call_t *call);
+void call_free(struct call_t *call);
 
 #endif  // !_CALL_H

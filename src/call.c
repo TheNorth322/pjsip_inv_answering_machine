@@ -1,6 +1,6 @@
 #include "../headers/call.h"
 
-pj_status_t create_call(pj_pool_t *pool, pj_str_t call_id, struct call_t **call)
+pj_status_t call_create(pj_pool_t *pool, pj_str_t call_id, struct call_t **call)
 {
     (*call) = (struct call_t *)pj_pool_alloc(pool, sizeof(**call));
     if (!call)
@@ -30,7 +30,7 @@ pj_status_t create_call(pj_pool_t *pool, pj_str_t call_id, struct call_t **call)
     return PJ_SUCCESS;
 }
 
-void free_call(struct call_t *call)
+void call_free(struct call_t *call)
 {
     if (call->socket)
     {
@@ -42,6 +42,5 @@ void free_call(struct call_t *call)
         pjmedia_snd_port_destroy(call->snd_port);
     }
 
-    //if (call->med_stream)
-    //    pjmedia_stream_destroy(call->med_stream);
+    pj_pool_release(call->pool);
 }

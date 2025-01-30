@@ -15,6 +15,10 @@
 #include <pjmedia/conference.h>
 #include <pjmedia/frame.h>
 #include <pjmedia/port.h>
+#include <pjmedia/conference.h>
+#include <pjmedia/master_port.h>
+#include <pjmedia/null_port.h>
+#include <pjmedia/sound_port.h>
 
 #include "call.h"
 #include "config.h"
@@ -44,11 +48,11 @@ struct answering_machine_t
 {
     pjsip_endpoint *g_endpt; /* SIP endpoint */
 
-    pj_caching_pool *cp; /* Global pool factory */
+    pj_caching_pool *cp; 
     pj_pool_t *pool;
     pj_pool_t *media_pool;
 
-    pjmedia_endpt *g_med_endpt; /* Media endpoint */
+    pjmedia_endpt *g_med_endpt;
 
     struct call_t **calls;
     struct media_socket_t **med_sockets;
@@ -57,6 +61,9 @@ struct answering_machine_t
     pjmedia_sock_info g_sock_info[MAX_MEDIA_CNT];
 
     pjmedia_conf *conf;
+    
+    pjmedia_master_port *master_port; 
+    pjmedia_port *null_port;
 
     pjsip_module mod_simpleua;
 

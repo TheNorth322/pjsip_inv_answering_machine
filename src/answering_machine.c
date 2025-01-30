@@ -17,11 +17,11 @@ static pj_status_t media_transport_create(void);
 
 static pj_status_t call_add(struct call_t *call);
 
-static pj_status_t socket_find(struct media_socket_t **socket);
-
 static pj_status_t call_find(const pj_str_t *dlg_id, struct call_t **call);
 
 static pj_status_t call_delete(const pj_str_t *dlg_id);
+
+static pj_status_t socket_find(struct media_socket_t **socket);
 
 static void answering_machine_free(struct answering_machine_t *machine_ptr);
 
@@ -33,9 +33,9 @@ static void call_on_media_update(pjsip_inv_session *inv, pj_status_t status);
 
 static void call_on_state_changed(pjsip_inv_session *inv, pjsip_event *e);
 
-static void on_ringing_timer_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
+static void on_ringing_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
 
-static void on_media_state_timer_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
+static void on_media_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
 
 static pj_bool_t on_rx_request(pjsip_rx_data *rdata);
 
@@ -47,7 +47,8 @@ pj_caching_pool cp;
 pj_status_t answering_machine_create(pj_pool_t **pool)
 {
     pj_status_t status;
-    int a = PJ_TRUE;
+    pjmedia_port *master_port;
+
     /* Init PJLIB */
     status = pj_init();
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
@@ -57,7 +58,7 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
     /* Init PJLIB-UTIL */
     status = pjlib_util_init();
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
-
+    
     /* Create pool factory and machine pool */
     pj_caching_pool_init(&cp, &pj_pool_factory_default_policy, 0);
 
@@ -112,9 +113,41 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
 
     media_transport_create();
 
-    status =
-        pjmedia_conf_create(machine->pool, MAX_CALLS, CLOCK_RATE, NCHANNELS, NSAMPLES, NBITS, 0, &machine->conf);
+    status = pjmedia_conf_create(machine->pool, 
+                                 MAX_CALLS, 
+                                 CLOCK_RATE, 
+                                 NCHANNELS, 
+                                 NSAMPLES, 
+                                 NBITS, 
+                                 PJMEDIA_CONF_NO_DEVICE, 
+                                 &machine->conf);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
+
+    master_port = pjmedia_conf_get_master_port(machine->conf);
+    
+    /* Create null media port */
+    pjmedia_null_port_create(machine->pool,
+                             CLOCK_RATE,
+                             NCHANNELS,
+                             NSAMPLES,
+                             NBITS,
+                             &machine->null_port);
+    
+    /* 
+     * Create new master port with upstream null port 
+     * and downstream conf bridge master port
+     */
+    pjmedia_master_port_create(machine->pool,
+                               machine->null_port, 
+                               master_port, 
+                               0, 
+                               &machine->master_port);
+    PJ_ASSERT_RETURN(status == PJ_SUCCESS, 1);
+    
+    /*
+     * Start the media flow 
+     */
+    pjmedia_master_port_start(machine->master_port);
 
     machine->table = pj_hash_create(machine->pool, 1000);
 
@@ -124,20 +157,10 @@ pj_status_t answering_machine_create(pj_pool_t **pool)
 void answering_machine_calls_recv(void)
 {
     PJ_LOG(3, (THIS_FILE, "Ready to accept incoming calls..."));
+    pj_time_val timeout = {ENDPT_TIMEOUT_SEC, ENDPT_TIMEOUT_MSEC};
+
     while (1)
     {
-        //char option[10];
-        //
-        //puts("Press 'q' to quit");
-        //if (fgets(option, sizeof(option), stdin) == NULL) {
-        //    puts("EOF while reading stdin, will quit now...");
-        //}
-        //
-        //if (option[0] == 'q') {
-        //    break;
-        //}
-        
-        pj_time_val timeout = {ENDPT_TIMEOUT_SEC, ENDPT_TIMEOUT_MSEC};
         pjsip_endpt_handle_events(machine->g_endpt, &timeout);
     }
 
@@ -355,7 +378,7 @@ static pj_status_t call_delete(const pj_str_t *dlg_id)
     {
         if (pj_strcmp(&machine->calls[i]->call_id, dlg_id) == 0)
         {
-            free_call(machine->calls[i]);
+            call_free(machine->calls[i]);
             break;
         }
     }
@@ -591,7 +614,7 @@ static void call_on_state_changed(pjsip_inv_session *inv, pjsip_event *e)
     }
 }
 
-static void on_ringing_timer_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry)
+static void on_ringing_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry)
 {
     pj_status_t status;
     pjsip_tx_data *tdata;
@@ -610,7 +633,7 @@ static void on_ringing_timer_callback(pj_timer_heap_t *timer_heap, struct pj_tim
     status = pjsip_inv_send_msg(call->inv, tdata);
 }
 
-static void on_media_state_timer_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry)
+static void on_media_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry)
 {
     pj_status_t status;
     pjsip_tx_data *tdata;
@@ -641,6 +664,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
     pjsip_user_agent *ua;
     pjsip_tx_data *tdata;
     pjsip_sip_uri *uri;
+    pj_pool_t *call_pool;
     unsigned options = 0;
     unsigned int *player_port;
     pj_status_t status;
@@ -656,7 +680,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
             reason = pj_str("Simple UA unable to handle "
                                      "this request");
 
-            pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 500, &reason, NULL, NULL);
+            pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 405, &reason, NULL, NULL);
         }
         return PJ_TRUE;
     }
@@ -668,7 +692,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
 
         reason = pj_str("Sorry Simple UA can not handle this INVITE");
 
-        pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 500, &reason, NULL, NULL);
+        pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 400, &reason, NULL, NULL);
         return PJ_TRUE;
     }
 
@@ -705,8 +729,10 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
         pjsip_endpt_respond_stateless(machine->g_endpt, rdata, 500, NULL, NULL, NULL);
         return PJ_TRUE;
     }
+    
+    call_pool = pj_pool_create(&machine->cp->factory, "call_pool", sizeof(*call), sizeof(*call), NULL);
 
-    status = create_call(dlg->pool, dlg->call_id->id, &call);
+    status = call_create(call_pool, dlg->call_id->id, &call);
     if (status != PJ_SUCCESS)
     {
         app_perror(THIS_FILE, "Error in call creation", status);
@@ -753,8 +779,8 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, PJ_TRUE);
 
     /* Init timers of the call */
-    pj_timer_entry_init(call->ringing_timer, 1, call, on_ringing_timer_callback);
-    pj_timer_entry_init(call->media_session_timer, 1, call, on_media_state_timer_callback);
+    pj_timer_entry_init(call->ringing_timer, 1, call, on_ringing_timer_expire_callback);
+    pj_timer_entry_init(call->media_session_timer, 1, call, on_media_timer_expire_callback);
 
     pjsip_endpt_schedule_timer(machine->g_endpt, call->ringing_timer, &call->ringing_time);
 

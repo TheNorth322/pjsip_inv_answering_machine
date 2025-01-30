@@ -20,7 +20,7 @@
 #define CHANNEL_COUNT 1
 #define SAMPLES_PER_FRAME 64
 #define BITS_PER_SAMPLE 16
-#define CLOCK_RATE 8000 
+#define SIGNALS_CLOCK_RATE 8000 
 
 pj_status_t signals_longtone_get(pj_pool_t *pool, pjmedia_port **port);
 

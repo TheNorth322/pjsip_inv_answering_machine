@@ -6,7 +6,7 @@ pj_status_t signals_longtone_get(pj_pool_t *pool, pjmedia_port **port)
 
     /* Create long tonegen */
     status = pjmedia_tonegen_create(pool, 
-                                    CLOCK_RATE, 
+                                    SIGNALS_CLOCK_RATE, 
                                     CHANNEL_COUNT, 
                                     SAMPLES_PER_FRAME, 
                                     BITS_PER_SAMPLE, 
@@ -49,7 +49,7 @@ pj_status_t signals_rbt_get(pj_pool_t *pool, pjmedia_port **port)
 
     /* Create rbt tonegen */
     status = pjmedia_tonegen_create(pool, 
-                                    CLOCK_RATE, 
+                                    SIGNALS_CLOCK_RATE, 
                                     CHANNEL_COUNT, 
                                     SAMPLES_PER_FRAME, 
                                     BITS_PER_SAMPLE, 
