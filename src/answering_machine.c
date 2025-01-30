@@ -35,7 +35,7 @@ static void call_on_state_changed(pjsip_inv_session *inv, pjsip_event *e);
 
 static void on_ringing_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
 
-static void on_media_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
+static void on_active_call_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry);
 
 static pj_bool_t on_rx_request(pjsip_rx_data *rdata);
 
@@ -357,7 +357,9 @@ static pj_status_t call_add(struct call_t *call)
 
 static pj_status_t call_find(const pj_str_t *dlg_id, struct call_t **call)
 {
-    for (int i = 0; i < machine->calls_count; i++)
+    int i = 0;
+
+    for (i = 0; i < machine->calls_count; i++)
     {
         if (pj_strcmp(&machine->calls[i]->call_id, dlg_id) == 0)
         {
@@ -395,7 +397,9 @@ static pj_status_t call_delete(const pj_str_t *dlg_id)
 
 static pj_status_t socket_find(struct media_socket_t **socket)
 {
-    for (int i = 0; i < MAX_MEDIA_CNT; i++)
+    int i = 0;
+
+    for (i = 0; i < MAX_MEDIA_CNT; i++)
     {
         if (machine->med_sockets[i]->occupied == PJ_FALSE)
         {
@@ -633,7 +637,7 @@ static void on_ringing_timer_expire_callback(pj_timer_heap_t *timer_heap, struct
     status = pjsip_inv_send_msg(call->inv, tdata);
 }
 
-static void on_media_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry)
+static void on_active_call_timer_expire_callback(pj_timer_heap_t *timer_heap, struct pj_timer_entry *entry)
 {
     pj_status_t status;
     pjsip_tx_data *tdata;
@@ -780,7 +784,7 @@ static pj_bool_t on_rx_request(pjsip_rx_data *rdata)
 
     /* Init timers of the call */
     pj_timer_entry_init(call->ringing_timer, 1, call, on_ringing_timer_expire_callback);
-    pj_timer_entry_init(call->media_session_timer, 1, call, on_media_timer_expire_callback);
+    pj_timer_entry_init(call->media_session_timer, 1, call, on_active_call_timer_expire_callback);
 
     pjsip_endpt_schedule_timer(machine->g_endpt, call->ringing_timer, &call->ringing_time);
 

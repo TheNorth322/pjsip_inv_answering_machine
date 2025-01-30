@@ -22,10 +22,10 @@
 #define BITS_PER_SAMPLE 16
 #define SIGNALS_CLOCK_RATE 8000 
 
-pj_status_t signals_longtone_get(pj_pool_t *pool, pjmedia_port **port);
+pj_status_t signals_longtone_create(pj_pool_t *pool, pjmedia_port **port);
 
-pj_status_t signals_wav_get(pj_pool_t *pool, pjmedia_port **port);
+pj_status_t signals_wav_create(pj_pool_t *pool, pjmedia_port **port);
 
-pj_status_t signals_rbt_get(pj_pool_t *pool, pjmedia_port **port);
+pj_status_t signals_rbt_create(pj_pool_t *pool, pjmedia_port **port);
 
 #endif  // !_SIGNALS_H_

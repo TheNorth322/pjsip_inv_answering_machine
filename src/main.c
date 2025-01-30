@@ -11,9 +11,9 @@ int main(void)
     answering_machine_create(&pool);
     
     /* Create signals */
-    signals_longtone_get(pool, &longtone);
-    signals_wav_get(pool, &wav);
-    signals_rbt_get(pool, &rbt);
+    signals_longtone_create(pool, &longtone);
+    signals_wav_create(pool, &wav);
+    signals_rbt_create(pool, &rbt);
     
     /* Add signals to answering machine */
     answering_machine_signal_add(longtone, "longtone");
